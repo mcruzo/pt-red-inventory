@@ -1,0 +1,37 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: inventory_sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD}
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+    networks:
+      - inventory-net
+
+  inventory.api:
+    build:
+      context: .
+      dockerfile: Inventory.API/Dockerfile
+    container_name: inventory_api
+    depends_on:
+      - sqlserver
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=${DATABASE};User Id=${USERID};Password=${SA_PASSWORD};TrustServerCertificate=True;
+    image: ${DOCKER_REGISTRY-}inventoryapi
+    ports:
+      - "5000:8080"
+    networks:
+      - inventory-net
+
+volumes:
+  sqldata:
+
+networks:
+  inventory-net:
+    driver: bridge
